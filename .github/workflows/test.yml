@@ -119,7 +119,7 @@ jobs:
     - name: Start monitoring services
       run: |
         echo "🚀 Starting monitoring stack..."
-        docker-compose -f docker-compose.test.yml up -d
+        docker compose -f docker-compose.test.yml up -d
         
     - name: Wait for services to be ready
       run: |
@@ -195,13 +195,13 @@ jobs:
       if: failure()
       run: |
         echo "❌ Service startup failed. Showing logs..."
-        docker-compose -f docker-compose.test.yml logs
+        docker compose -f docker-compose.test.yml logs
         
     - name: Cleanup test environment
       if: always()
       run: |
         echo "🧹 Cleaning up..."
-        docker-compose -f docker-compose.test.yml down -v || true
+        docker compose -f docker-compose.test.yml down -v || true
         docker system prune -f || true
 
   test-scripts:
@@ -366,5 +366,5 @@ jobs:
     - name: Cleanup integration test
       if: always()
       run: |
-        docker-compose -f docker-compose.integration.yml down -v || true
+        docker compose -f docker-compose.integration.yml down -v || true
         rm -rf test-hdd || true
