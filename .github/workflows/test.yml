@@ -147,10 +147,13 @@ jobs:
     - name: Wait for services to be ready
       run: |
         echo "⏳ Waiting for services to start..."
-        sleep 30
         
-        # Wait for Grafana
-        timeout=60
+        # Show what's running first
+        docker compose -f docker-compose.test.yml ps
+        
+        # Wait for Grafana with better retry logic
+        echo "Waiting for Grafana..."
+        timeout=120
         while [ $timeout -gt 0 ]; do
           if curl -f -s http://localhost:3000/api/health > /dev/null 2>&1; then
             echo "✅ Grafana is ready"
@@ -161,8 +164,15 @@ jobs:
           timeout=$((timeout - 5))
         done
         
+        if [ $timeout -eq 0 ]; then
+          echo "❌ Grafana timeout - showing logs:"
+          docker compose -f docker-compose.test.yml logs grafana
+          exit 1
+        fi
+        
         # Wait for Loki
-        timeout=60
+        echo "Waiting for Loki..."
+        timeout=120
         while [ $timeout -gt 0 ]; do
           if curl -f -s http://localhost:3100/ready > /dev/null 2>&1; then
             echo "✅ Loki is ready"
@@ -173,8 +183,15 @@ jobs:
           timeout=$((timeout - 5))
         done
         
+        if [ $timeout -eq 0 ]; then
+          echo "❌ Loki timeout - showing logs:"
+          docker compose -f docker-compose.test.yml logs loki
+          exit 1
+        fi
+        
         # Wait for Prometheus
-        timeout=60
+        echo "Waiting for Prometheus..."
+        timeout=120
         while [ $timeout -gt 0 ]; do
           if curl -f -s http://localhost:9090/-/healthy > /dev/null 2>&1; then
             echo "✅ Prometheus is ready"
@@ -184,6 +201,12 @@ jobs:
           sleep 5
           timeout=$((timeout - 5))
         done
+        
+        if [ $timeout -eq 0 ]; then
+          echo "❌ Prometheus timeout - showing logs:"
+          docker compose -f docker-compose.test.yml logs prometheus
+          exit 1
+        fi
         
     - name: Test service endpoints
       run: |
@@ -390,18 +413,75 @@ jobs:
         # Start services
         docker compose -f docker-compose.integration.yml up -d
         
-        # Wait for startup
-        sleep 45
+        # Show what's running
+        echo "Started services:"
+        docker compose -f docker-compose.integration.yml ps
         
-        # Test all endpoints
-        echo "Testing Grafana..."
-        curl -f http://localhost:3000/api/health
+        # Wait for Grafana with retry logic
+        echo "Waiting for Grafana to be ready..."
+        timeout=120
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:3000/api/health > /dev/null 2>&1; then
+            echo "✅ Grafana is ready"
+            break
+          fi
+          echo "Waiting for Grafana... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
         
-        echo "Testing Loki..."
-        curl -f http://localhost:3100/ready
+        if [ $timeout -eq 0 ]; then
+          echo "❌ Grafana did not become ready in time"
+          echo "Grafana logs:"
+          docker compose -f docker-compose.integration.yml logs grafana
+          exit 1
+        fi
         
-        echo "Testing Prometheus..."
-        curl -f http://localhost:9090/-/healthy
+        # Wait for Loki with retry logic
+        echo "Waiting for Loki to be ready..."
+        timeout=120
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:3100/ready > /dev/null 2>&1; then
+            echo "✅ Loki is ready"
+            break
+          fi
+          echo "Waiting for Loki... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
+        
+        if [ $timeout -eq 0 ]; then
+          echo "❌ Loki did not become ready in time"
+          echo "Loki logs:"
+          docker compose -f docker-compose.integration.yml logs loki
+          exit 1
+        fi
+        
+        # Wait for Prometheus with retry logic
+        echo "Waiting for Prometheus to be ready..."
+        timeout=120
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:9090/-/healthy > /dev/null 2>&1; then
+            echo "✅ Prometheus is ready"
+            break
+          fi
+          echo "Waiting for Prometheus... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
+        
+        if [ $timeout -eq 0 ]; then
+          echo "❌ Prometheus did not become ready in time"
+          echo "Prometheus logs:"
+          docker compose -f docker-compose.integration.yml logs prometheus
+          exit 1
+        fi
+        
+        # Test all endpoints one more time to be sure
+        echo "🧪 Final endpoint validation..."
+        curl -f http://localhost:3000/api/health && echo "✅ Grafana final check passed"
+        curl -f http://localhost:3100/ready && echo "✅ Loki final check passed"
+        curl -f http://localhost:9090/-/healthy && echo "✅ Prometheus final check passed"
         
         echo "✅ Integration tests passed!"
         
