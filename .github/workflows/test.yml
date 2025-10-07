@@ -215,7 +215,9 @@ jobs:
       
     - name: Make scripts executable
       run: |
-        chmod +x scripts/**/*.sh
+        echo "🔧 Making scripts executable..."
+        find scripts -name "*.sh" -exec chmod +x {} \;
+        ls -la scripts/**/*.sh
         
     - name: Test create-env script
       run: |
@@ -225,6 +227,7 @@ jobs:
         # Check if .env file was created
         if [ -f ".env" ]; then
           echo "✅ .env file created successfully"
+          echo "Contents:"
           cat .env
         else
           echo "❌ .env file was not created"
