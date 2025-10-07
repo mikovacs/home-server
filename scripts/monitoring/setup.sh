@@ -157,9 +157,22 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  - job_name: 'docker'
+  - job_name: 'cadvisor'
     static_configs:
-      - targets: ['host.docker.internal:9323']
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
 EOF
 
 # Create Grafana provisioning

@@ -149,10 +149,34 @@ services:
     restart: unless-stopped
     command:
       - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     volumes:
       - '/:/host:ro'
     ports:
       - "9100:9100"
+    networks:
+      - homeserver
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /cgroup:/cgroup:ro
+    ports:
+      - "8080:8080"
     networks:
       - homeserver
     logging:
@@ -169,18 +193,17 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=${TZ:-America/New_York}
-      - WEBUI_PORT=8080
+      - WEBUI_PORT=8081
     volumes:
       - qbittorrent_config:/config
       - downloads_complete:/downloads
       - downloads_incomplete:/downloads/incomplete
     ports:
-      - "8080:8080"
+      - "8081:8081"
       - "6881:6881"
       - "6881:6881/udp"
     networks:
       - homeserver
-    # depends_on removed: qBittorrent does not require loki
     logging:
       driver: json-file
       options:

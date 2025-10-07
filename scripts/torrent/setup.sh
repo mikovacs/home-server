@@ -63,7 +63,7 @@ Session\AsyncIOThreadsCount=10
 
 [Preferences]
 WebUI\Enabled=true
-WebUI\Port=8080
+WebUI\Port=8081
 WebUI\Address=*
 WebUI\Username=admin
 WebUI\Password_PBKDF2="@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8NR1Gur2hmQCvCDpm39Q+PsJRJPaCU51dEiz+dTzh8qbPsL8WkFljQYFQ==)"
@@ -133,7 +133,7 @@ mkdir -p "$DOWNLOADS_DIR"/{torrents,watch}
 echo -e "${GREEN}✓ qBittorrent configuration complete${NC}"
 echo -e "\nNext steps:"
 echo -e "1. Run: ${YELLOW}docker compose up -d qbittorrent${NC}"
-echo -e "2. Access qBittorrent WebUI at: ${YELLOW}http://your-pi-ip:8080${NC}"
+echo -e "2. Access qBittorrent WebUI at: ${YELLOW}http://your-pi-ip:8081${NC}"
 echo -e "3. Default login: ${YELLOW}admin / adminadmin${NC}"
 echo -e "4. Change the password immediately after first login!"
 echo -e "5. Configure your download categories and paths"
