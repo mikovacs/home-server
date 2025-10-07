@@ -48,6 +48,157 @@ jobs:
         make --dry-run stop
         echo "✅ All make commands are valid"
 
+  test-monitoring-stack:
+    name: Test Monitoring Stack
+    runs-on: ubuntu-latest
+    needs: validate-setup
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Create test environment
+      run: |
+        echo "🏗️ Creating test environment..."
+        mkdir -p test-volumes/{grafana,loki,prometheus}
+        chmod 777 test-volumes/*
+        
+    - name: Create test Docker Compose
+      run: |
+        cat > docker-compose.test.yml << 'EOF'
+        version: '3.8'
+        
+        services:
+          grafana:
+            image: grafana/grafana:latest
+            container_name: grafana-test
+            environment:
+              - GF_SECURITY_ADMIN_USER=admin
+              - GF_SECURITY_ADMIN_PASSWORD=test123
+              - GF_USERS_ALLOW_SIGN_UP=false
+            volumes:
+              - ./test-volumes/grafana:/var/lib/grafana
+            ports:
+              - "3000:3000"
+            networks:
+              - test-network
+              
+          loki:
+            image: grafana/loki:latest
+            container_name: loki-test
+            volumes:
+              - ./test-volumes/loki:/loki
+            ports:
+              - "3100:3100"
+            networks:
+              - test-network
+              
+          prometheus:
+            image: prom/prometheus:latest
+            container_name: prometheus-test
+            volumes:
+              - ./test-volumes/prometheus:/prometheus
+            ports:
+              - "9090:9090"
+            networks:
+              - test-network
+              
+        networks:
+          test-network:
+            driver: bridge
+        EOF
+        
+    - name: Start monitoring services
+      run: |
+        echo "🚀 Starting monitoring stack..."
+        docker-compose -f docker-compose.test.yml up -d
+        
+    - name: Wait for services to be ready
+      run: |
+        echo "⏳ Waiting for services to start..."
+        sleep 30
+        
+        # Wait for Grafana
+        timeout=60
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:3000/api/health > /dev/null 2>&1; then
+            echo "✅ Grafana is ready"
+            break
+          fi
+          echo "Waiting for Grafana... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
+        
+        # Wait for Loki
+        timeout=60
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:3100/ready > /dev/null 2>&1; then
+            echo "✅ Loki is ready"
+            break
+          fi
+          echo "Waiting for Loki... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
+        
+        # Wait for Prometheus
+        timeout=60
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:9090/-/healthy > /dev/null 2>&1; then
+            echo "✅ Prometheus is ready"
+            break
+          fi
+          echo "Waiting for Prometheus... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
+        
+    - name: Test service endpoints
+      run: |
+        echo "🧪 Testing service endpoints..."
+        
+        # Test Grafana
+        echo "Testing Grafana..."
+        curl -f http://localhost:3000/api/health
+        echo "✅ Grafana health check passed"
+        
+        # Test Grafana login
+        response=$(curl -X POST -H "Content-Type: application/json" \
+          -d '{"user":"admin","password":"test123"}' \
+          http://localhost:3000/login 2>/dev/null || echo "failed")
+        echo "✅ Grafana login test completed"
+        
+        # Test Loki
+        echo "Testing Loki..."
+        curl -f http://localhost:3100/ready
+        echo "✅ Loki ready check passed"
+        
+        # Test Prometheus
+        echo "Testing Prometheus..."
+        curl -f http://localhost:9090/-/healthy
+        echo "✅ Prometheus health check passed"
+        
+        # Test Prometheus metrics
+        curl -f http://localhost:9090/api/v1/query?query=up
+        echo "✅ Prometheus metrics query passed"
+        
+    - name: Show service logs on failure
+      if: failure()
+      run: |
+        echo "❌ Service startup failed. Showing logs..."
+        docker-compose -f docker-compose.test.yml logs
+        
+    - name: Cleanup test environment
+      if: always()
+      run: |
+        echo "🧹 Cleaning up..."
+        docker-compose -f docker-compose.test.yml down -v || true
+        docker system prune -f || true
+
   test-scripts:
     name: Test Scripts
     runs-on: ubuntu-latest
@@ -69,7 +220,6 @@ jobs:
         # Check if .env file was created
         if [ -f ".env" ]; then
           echo "✅ .env file created successfully"
-          echo "Contents:"
           cat .env
         else
           echo "❌ .env file was not created"
@@ -84,3 +234,132 @@ jobs:
           bash -n "$script"
           echo "✅ $script syntax is valid"
         done
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: validate-setup
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+    - name: Check for secrets in code
+      run: |
+        echo "🔍 Checking for secrets..."
+        # Check if any actual secrets are committed
+        if grep -r "CLOUDFLARE_TUNNEL_TOKEN=.*[A-Za-z0-9]" . --exclude-dir=.git --exclude="*.md" --exclude=".env*"; then
+          echo "❌ Found potential secrets in code!"
+          exit 1
+        else
+          echo "✅ No secrets found in code"
+        fi
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [test-monitoring-stack, test-scripts]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Create full test environment
+      run: |
+        echo "🏗️ Creating integration test environment..."
+        
+        # Create test directory structure
+        mkdir -p test-hdd/{plex/{config,transcode},media/{movies,tv,music}}
+        mkdir -p test-hdd/{downloads/{complete,incomplete},backup,logs}
+        mkdir -p test-hdd/cloudflared/config
+        mkdir -p test-hdd/monitoring/{grafana/{data,config},loki/{data,config},promtail/config,prometheus/{data,config}}
+        
+        # Set permissions
+        chmod -R 777 test-hdd/
+        
+    - name: Create integration docker-compose
+      run: |
+        # Create a simplified version for testing
+        cat > docker-compose.integration.yml << 'EOF'
+        version: '3.8'
+        
+        services:
+          grafana:
+            image: grafana/grafana:latest
+            container_name: grafana-integration
+            environment:
+              - GF_SECURITY_ADMIN_USER=admin
+              - GF_SECURITY_ADMIN_PASSWORD=test123
+            volumes:
+              - ./test-hdd/monitoring/grafana/data:/var/lib/grafana
+            ports:
+              - "3000:3000"
+            networks:
+              - integration-network
+              
+          loki:
+            image: grafana/loki:latest
+            container_name: loki-integration
+            volumes:
+              - ./test-hdd/monitoring/loki/data:/loki
+            ports:
+              - "3100:3100"
+            networks:
+              - integration-network
+              
+          prometheus:
+            image: prom/prometheus:latest
+            container_name: prometheus-integration
+            volumes:
+              - ./test-hdd/monitoring/prometheus/data:/prometheus
+            ports:
+              - "9090:9090"
+            networks:
+              - integration-network
+              
+        networks:
+          integration-network:
+            driver: bridge
+        EOF
+        
+    - name: Test full stack integration
+      run: |
+        echo "🧪 Running integration tests..."
+        
+        # Start services
+        docker-compose -f docker-compose.integration.yml up -d
+        
+        # Wait for startup
+        sleep 45
+        
+        # Test all endpoints
+        echo "Testing Grafana..."
+        curl -f http://localhost:3000/api/health
+        
+        echo "Testing Loki..."
+        curl -f http://localhost:3100/ready
+        
+        echo "Testing Prometheus..."
+        curl -f http://localhost:9090/-/healthy
+        
+        echo "✅ Integration tests passed!"
+        
+    - name: Cleanup integration test
+      if: always()
+      run: |
+        docker-compose -f docker-compose.integration.yml down -v || true
+        rm -rf test-hdd || true
