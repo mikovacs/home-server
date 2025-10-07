@@ -98,7 +98,7 @@ tree "$MOUNT_POINT" 2>/dev/null || find "$MOUNT_POINT" -type d | sort
 echo -e "\n${GREEN}🎉 External HDD setup complete!${NC}"
 echo -e "\nNext steps:"
 echo -e "1. Copy your media files to the appropriate directories"
-echo -e "2. Run: ${YELLOW}docker-compose up -d${NC}"
+echo -e "2. Run: ${YELLOW}docker compose up -d${NC}"
 echo -e "3. Access Plex at: ${YELLOW}http://$(hostname -I | awk '{print $1}'):32400/web${NC}"
 
 # Display disk usage

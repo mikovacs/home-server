@@ -22,10 +22,10 @@ show_help() {
 
 show_status() {
     echo -e "${YELLOW}Tunnel Status:${NC}"
-    docker-compose ps cloudflared
+    docker compose ps cloudflared
     echo ""
     
-    if docker-compose ps cloudflared | grep -q "Up"; then
+    if docker compose ps cloudflared | grep -q "Up"; then
         echo -e "${GREEN}✓ Tunnel is running${NC}"
     else
         echo -e "${RED}✗ Tunnel is not running${NC}"
@@ -34,12 +34,12 @@ show_status() {
 
 show_logs() {
     echo -e "${YELLOW}Tunnel Logs:${NC}"
-    docker-compose logs -f cloudflared
+    docker compose logs -f cloudflared
 }
 
 restart_tunnel() {
     echo -e "${YELLOW}Restarting tunnel...${NC}"
-    docker-compose restart cloudflared
+    docker compose restart cloudflared
     echo -e "${GREEN}✓ Tunnel restarted${NC}"
 }
 

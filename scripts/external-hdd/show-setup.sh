@@ -25,16 +25,16 @@ else
 fi
 
 echo -e "\n${YELLOW}Docker Services:${NC}"
-if docker-compose ps 2>/dev/null; then
-    docker-compose ps
+if docker compose ps 2>/dev/null; then
+    docker compose ps
 else
-    echo -e "${RED}No services running or docker-compose not found${NC}"
+    echo -e "${RED}No services running or docker compose not found${NC}"
 fi
 
 echo -e "\n${YELLOW}Service Health:${NC}"
 services=("plex" "grafana" "loki" "prometheus" "cloudflared")
 for service in "${services[@]}"; do
-    if docker-compose ps "$service" 2>/dev/null | grep -q "Up"; then
+    if docker compose ps "$service" 2>/dev/null | grep -q "Up"; then
         echo -e "${GREEN}✓ $service is running${NC}"
     else
         echo -e "${RED}✗ $service is not running${NC}"

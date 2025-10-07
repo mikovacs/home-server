@@ -175,6 +175,6 @@ EOF
 echo -e "${GREEN}✓ Monitoring stack configuration complete${NC}"
 echo -e "\nNext steps:"
 echo -e "1. Add GRAFANA_PASSWORD to your .env file"
-echo -e "2. Run: ${YELLOW}docker-compose up -d${NC}"
+echo -e "2. Run: ${YELLOW}docker compose up -d${NC}"
 echo -e "3. Access Grafana at: ${YELLOW}http://your-pi-ip:3000${NC}"
 echo -e "   Default login: admin / [your GRAFANA_PASSWORD]"
