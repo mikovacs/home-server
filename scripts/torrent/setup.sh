@@ -51,7 +51,6 @@ Session\MaxUploads=4
 Session\MaxUploadsPerTorrent=4
 Session\GlobalMaxSeedingMinutes=0
 Session\GlobalMaxRatio=-1
-Session\GlobalMaxSeedingMinutes=0
 Session\DHT=true
 Session\DHTPort=6881
 Session\PeX=true
