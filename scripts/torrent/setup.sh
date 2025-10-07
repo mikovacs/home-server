@@ -108,7 +108,6 @@ General\MinimizeToTray=false
 General\StartMinimized=false
 General\ConfirmDeletion=true
 General\ExitConfirm=true
-General\CloseToTrayNotified=true
 General\MinimizeToTrayNotified=true
 General\AutoUpdateTrackers=false
 General\BrandingEnabled=true
