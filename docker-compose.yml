@@ -63,11 +63,14 @@ services:
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
       - grafana_data:/var/lib/grafana
-      - grafana_config:/etc/grafana
+      - grafana_config:/etc/grafana/provisioning
+      - grafana_dashboards:/var/lib/grafana/dashboards
     ports:
       - "3000:3000"
     networks:
@@ -264,7 +267,14 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /mnt/external-hdd/monitoring/grafana/config
+      device: /mnt/external-hdd/monitoring/grafana/config/provisioning
+
+  grafana_dashboards:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/monitoring/grafana/config/dashboards
 
   loki_data:
     driver: local

@@ -29,6 +29,7 @@ server:
   grpc_listen_port: 9096
 
 common:
+  instance_addr: 127.0.0.1
   path_prefix: /loki
   storage:
     filesystem:
@@ -36,9 +37,13 @@ common:
       rules_directory: /loki/rules
   replication_factor: 1
   ring:
-    instance_addr: 127.0.0.1
     kvstore:
       store: inmemory
+
+limits_config:
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  allow_structured_metadata: false
 
 query_range:
   results_cache:
@@ -50,15 +55,35 @@ query_range:
 schema_config:
   configs:
     - from: 2020-10-24
-      store: boltdb-shipper
+      store: tsdb
       object_store: filesystem
-      schema: v11
+      schema: v13
       index:
         prefix: index_
         period: 24h
 
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
+    cache_ttl: 24h
+  filesystem:
+    directory: /loki/chunks
+
+compactor:
+  working_directory: /loki/boltdb-shipper-compactor
+  shared_store: filesystem
+
 ruler:
-  alertmanager_url: http://localhost:9093
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
 EOF
 
 # Create Promtail config
@@ -149,13 +174,15 @@ datasources:
     type: prometheus
     access: proxy
     url: http://prometheus:9090
-    isDefault: false
+    isDefault: true
     
   - name: Loki
     type: loki
     access: proxy
     url: http://loki:3100
-    isDefault: true
+    isDefault: false
+    jsonData:
+      maxLines: 1000
 EOF
 
 cat > "$MONITORING_DIR/grafana/config/provisioning/dashboards/dashboards.yml" << 'EOF'
@@ -168,13 +195,85 @@ providers:
     type: file
     disableDeletion: false
     editable: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
     options:
-      path: /etc/grafana/provisioning/dashboards
+      path: /var/lib/grafana/dashboards
+EOF
+
+# Create a basic system dashboard
+echo -e "${YELLOW}Creating basic system dashboard...${NC}"
+mkdir -p "$MONITORING_DIR/grafana/config/dashboards"
+
+cat > "$MONITORING_DIR/grafana/config/dashboards/system-overview.json" << 'EOF'
+{
+  "dashboard": {
+    "id": null,
+    "title": "System Overview",
+    "tags": ["system"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 30,
+    "version": 1,
+    "panels": [
+      {
+        "id": 1,
+        "title": "CPU Usage",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Memory Usage",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}
 EOF
 
 echo -e "${GREEN}✓ Monitoring stack configuration complete${NC}"
 echo -e "\nNext steps:"
 echo -e "1. Add GRAFANA_PASSWORD to your .env file"
-echo -e "2. Run: ${YELLOW}docker compose up -d${NC}"
+echo -e "2. Run: ${YELLOW}make stop-monitoring && make start-monitoring${NC}"
 echo -e "3. Access Grafana at: ${YELLOW}http://your-pi-ip:3000${NC}"
 echo -e "   Default login: admin / [your GRAFANA_PASSWORD]"
+echo -e "4. Check datasource connectivity in Grafana Settings > Data Sources"
