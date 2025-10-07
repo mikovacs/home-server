@@ -2,6 +2,7 @@
 
 setup:
 	@echo "🏠 Setting up home server..."
+	chmod +x scripts/setup.sh
 	chmod +x scripts/external-hdd/*.sh
 	chmod +x scripts/cloudflare/*.sh
 	chmod +x scripts/monitoring/*.sh
