@@ -1,6 +1,6 @@
 # 🏠 Home Server Setup
 
-![CI/CD Status](https://github.com/yourusername/home-server/actions/workflows/test.yml/badge.svg)
+![CI/CD Status](https://github.com/mikovacs/home-server/actions/workflows/test.yml/badge.svg)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 ![Grafana](https://img.shields.io/badge/Monitoring-Grafana-orange)
 ![Cloudflare](https://img.shields.io/badge/Tunnel-Cloudflare-orange)
