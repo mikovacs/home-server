@@ -6,7 +6,7 @@ setup:
 	chmod +x scripts/external-hdd/*.sh
 	chmod +x scripts/cloudflare/*.sh
 	chmod +x scripts/monitoring/*.sh
-	chmod +x scripts/qbittorrent/*.sh
+	chmod +x scripts/torrent/*.sh
 	chmod +x scripts/create-env.sh
 	./scripts/setup.sh
 
