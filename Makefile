@@ -28,7 +28,7 @@ monitoring-setup:
 
 qbittorrent-setup:
 	@echo "📥 Setting up qBittorrent..."
-	sudo ./scripts/qbittorrent/setup.sh
+	sudo ./scripts/torrent/setup.sh
 
 start:
 	@echo "🚀 Starting services..."
