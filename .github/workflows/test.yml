@@ -2,13 +2,13 @@ name: Home Server CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, development ]
   pull_request:
     branches: [ main ]
 
 env:
   GRAFANA_PASSWORD: test123
-  TZ: America/New_York
+  TZ: Europe/Budapest
   PLEX_CLAIM: ""
   CLOUDFLARE_TUNNEL_TOKEN: "test-token"
 
