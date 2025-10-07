@@ -177,8 +177,7 @@ services:
       - "6881:6881/udp"
     networks:
       - homeserver
-    depends_on:
-      - loki
+    # depends_on removed: qBittorrent does not require loki
     logging:
       driver: json-file
       options:
