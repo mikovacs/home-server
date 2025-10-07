@@ -73,7 +73,7 @@ echo "   - Service: http://grafana:3000"
 echo ""
 echo "3. Save the tunnel configuration"
 echo ""
-echo -e "${GREEN}Then run: docker-compose up -d cloudflared${NC}"
+echo -e "${GREEN}Then run: docker compose up -d cloudflared${NC}"
 
 # Test tunnel token format
 if [[ $TUNNEL_TOKEN =~ ^[A-Za-z0-9+/=]+$ ]]; then
