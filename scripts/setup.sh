@@ -14,7 +14,7 @@ echo -e "${YELLOW}Making scripts executable...${NC}"
 chmod +x scripts/external-hdd/*.sh
 chmod +x scripts/cloudflare/*.sh
 chmod +x scripts/monitoring/*.sh
-chmod +x scripts/qbittorrent/*.sh
+chmod +x scripts/torrent/*.sh
 chmod +x scripts/create-env.sh
 
 echo -e "${GREEN}✓ Scripts are now executable${NC}"
