@@ -104,7 +104,6 @@ General\HideZeroValues=false
 General\HideZeroComboValues=0
 General\RefreshInterval=1500
 General\AlternatingRowColors=true
-General\CloseToTray=true
 General\MinimizeToTray=false
 General\StartMinimized=false
 General\ConfirmDeletion=true
