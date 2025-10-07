@@ -1,17 +1,61 @@
 # 🏠 Home Server Setup
 
-A Docker-based home server setup for Raspberry Pi with Plex media server, external HDD management, secure remote access via Cloudflare Tunnel, and comprehensive monitoring with Grafana.
+![CI/CD Status](https://github.com/yourusername/home-server/actions/workflows/test.yml/badge.svg)
+![Docker](https://img.shields.io/badge/Docker-Compose-blue)
+![Grafana](https://img.shields.io/badge/Monitoring-Grafana-orange)
+![Cloudflare](https://img.shields.io/badge/Tunnel-Cloudflare-orange)
 
-![CI/CD Status](https://github.com/yourusername/home-server/workflows/Home%20Server%20CI%2FCD/badge.svg)
+A comprehensive Docker-based home server setup for Raspberry Pi with Plex media server, external HDD management, secure remote access via Cloudflare Tunnel, and comprehensive monitoring with Grafana, Loki, and Prometheus.
 
-## 📋 Prerequisites
+## ✅ Automated Testing
 
-- Raspberry Pi (4 recommended) with Raspberry Pi OS
-- External HDD/SSD for media storage
-- Docker and Docker Compose installed
-- Cloudflare account with a domain (for tunnel access)
+Every push and pull request is automatically tested with:
+
+- 🔍 **Configuration Validation** - Docker Compose, Makefile, and script syntax
+- 📊 **Monitoring Stack** - Grafana, Loki, and Prometheus startup and health checks
+- 🧪 **Script Testing** - All shell scripts functionality and syntax
+- 🔒 **Security Scanning** - Vulnerability detection and secrets checking  
+- 🔗 **Integration Testing** - Full stack with volume mounts and networking
 
 ## 🚀 Quick Start
+
+```bash
+# Clone and setup
+git clone https://github.com/yourusername/home-server.git
+cd home-server
+
+# Run tests locally (optional)
+make test-all
+
+# Initial setup
+make setup
+make create-env
+
+# Edit .env with your values
+nano .env
+
+# Setup external HDD
+sudo make mount
+
+# Setup monitoring and tunnel
+make monitoring-setup
+make tunnel-setup
+
+# Start everything
+make start
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+make test-all
+
+# Individual test components
+make validate-config    # Test configuration files
+make test-scripts      # Test script functionality  
+make test-monitoring   # Test monitoring stack (requires Docker)
+```
 
 ### 1. Clone and Setup
 
