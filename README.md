@@ -5,7 +5,7 @@
 ![Grafana](https://img.shields.io/badge/Monitoring-Grafana-orange)
 ![Cloudflare](https://img.shields.io/badge/Tunnel-Cloudflare-orange)
 
-A comprehensive Docker-based home server setup for Raspberry Pi with Plex media server, external HDD management, secure remote access via Cloudflare Tunnel, and comprehensive monitoring with Grafana, Loki, and Prometheus.
+A comprehensive Docker-based home server setup for Raspberry Pi with Plex media server, qBittorrent download client, external HDD management, secure remote access via Cloudflare Tunnel, and comprehensive monitoring with Grafana, Loki, and Prometheus.
 
 ## ✅ Automated Testing
 
@@ -13,6 +13,7 @@ Every push and pull request is automatically tested with:
 
 - 🔍 **Configuration Validation** - Docker Compose, Makefile, and script syntax
 - 📊 **Monitoring Stack** - Grafana, Loki, and Prometheus startup and health checks
+- 📥 **Download Client** - qBittorrent WebUI accessibility and configuration
 - 🧪 **Script Testing** - All shell scripts functionality and syntax
 - 🔒 **Security Scanning** - Vulnerability detection and secrets checking  
 - 🔗 **Integration Testing** - Full stack with volume mounts and networking
@@ -37,8 +38,9 @@ nano .env
 # Setup external HDD
 sudo make mount
 
-# Setup monitoring and tunnel
+# Setup monitoring, downloads, and tunnel
 make monitoring-setup
+make qbittorrent-setup
 make tunnel-setup
 
 # Start everything
@@ -112,6 +114,14 @@ Follow the prompts to:
 2. Edit `docker-compose.yaml` and add your claim token to `PLEX_CLAIM`
 3. Update the timezone in `TZ` if needed
 
+#### qBittorrent Configuration
+
+1. Access qBittorrent WebUI at `http://your-pi-ip:8080`
+2. Default login: `admin` / `adminadmin`
+3. **Change the password immediately!**
+4. Configure download paths and categories as needed
+5. Set up any VPN or proxy settings if desired
+
 #### Cloudflare Tunnel Configuration
 
 1. Go to [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com/)
@@ -119,6 +129,7 @@ Follow the prompts to:
 3. Find your tunnel and add public hostnames:
    - `plex.yourdomain.com` → `http://plex:32400`
    - `grafana.yourdomain.com` → `http://grafana:3000`
+   - `qbittorrent.yourdomain.com` → `http://qbittorrent:8080` (⚠️ **Security Warning:** Only expose if you trust your network and have strong authentication)
    - Add more services as you expand
 
 ### 6. Start Services
@@ -134,11 +145,13 @@ make start
 - Plex: `http://your-pi-ip:32400/web`
 - Grafana: `http://your-pi-ip:3000` (admin / your-grafana-password)
 - Prometheus: `http://your-pi-ip:9090`
+- qBittorrent: `http://your-pi-ip:8080` (admin / adminadmin - **change this!**)
 
 **Remote Access (via Cloudflare Tunnel):**
 
 - Plex: `https://plex.yourdomain.com`
 - Grafana: `https://grafana.yourdomain.com`
+- qBittorrent: `https://qbittorrent.yourdomain.com` (if configured)
 
 ## 📁 Directory Structure
 
@@ -149,6 +162,8 @@ After setup, your external HDD will have this structure:
 ├── plex/
 │   ├── config/          # Plex configuration
 │   └── transcode/       # Transcoding temp files
+├── qbittorrent/
+│   └── config/          # qBittorrent configuration
 ├── cloudflared/
 │   └── config/          # Cloudflare tunnel configuration
 ├── monitoring/          # Monitoring stack data
@@ -169,7 +184,9 @@ After setup, your external HDD will have this structure:
 │   └── music/           # Music files
 ├── downloads/
 │   ├── complete/        # Completed downloads
-│   └── incomplete/      # In-progress downloads
+│   ├── incomplete/      # In-progress downloads
+│   ├── watch/           # Auto-import torrent files
+│   └── torrents/        # Torrent file storage
 ├── backup/              # Backup storage
 └── logs/                # Service logs
 ```
@@ -195,6 +212,14 @@ make start-monitoring  # Start monitoring services only
 make stop-monitoring   # Stop monitoring services
 make monitoring-logs   # Show all monitoring logs
 make grafana-logs      # Show Grafana logs only
+```
+
+### Download Management Commands
+
+```bash
+make qbittorrent-setup    # Setup qBittorrent
+make qbittorrent-logs     # Show qBittorrent logs
+make restart-qbittorrent  # Restart qBittorrent service
 ```
 
 ### Cloudflare Tunnel Commands
@@ -230,6 +255,7 @@ The monitoring stack includes:
 
 - 📈 **System Metrics**: CPU, memory, disk usage, network
 - 📋 **Container Logs**: All Docker service logs in one place
+- 📥 **Download Monitoring**: Track qBittorrent download stats and logs  
 - 🎯 **Custom Dashboards**: Create dashboards for your services
 - 🔍 **Log Search**: Search and filter logs across all services
 - 📊 **Real-time Monitoring**: Live metrics and log streaming
@@ -241,6 +267,7 @@ After setup, you'll have access to:
 - System overview dashboard
 - Container metrics and logs
 - Plex performance monitoring
+- qBittorrent download statistics
 - Tunnel connectivity status
 
 ## 🔧 Troubleshooting
@@ -256,6 +283,19 @@ After setup, you'll have access to:
 1. Check if container is running: `docker ps`
 2. Check logs: `make plex-logs`
 3. Verify port is not blocked: `sudo netstat -tlnp | grep 32400`
+
+### qBittorrent Issues
+
+1. Check if container is running: `docker ps`
+2. Check logs: `make qbittorrent-logs`
+3. Verify WebUI access: `http://your-pi-ip:8080`
+4. Check default credentials: `admin` / `adminadmin`
+5. Verify download directories have proper permissions:
+
+   ```bash
+   sudo chown -R 1000:1000 /mnt/external-hdd/downloads
+   sudo chmod -R 755 /mnt/external-hdd/downloads
+   ```
 
 ### Monitoring Issues
 
@@ -294,6 +334,12 @@ make monitoring-logs   # All monitoring services
 make grafana-logs      # Grafana specific logs
 ```
 
+### Download Client Status
+
+```bash
+make qbittorrent-logs  # qBittorrent logs and status
+```
+
 ### Tunnel Status
 
 ```bash
@@ -306,6 +352,7 @@ This shows:
 - Directory structure
 - Running Docker services
 - Monitoring stack health
+- Download client status
 - Tunnel connectivity status
 
 ## 🌐 Remote Access & Security
@@ -321,12 +368,15 @@ This shows:
 
 ### Security Best Practices
 
-- Use strong passwords for all services (especially Grafana)
+- Use strong passwords for all services (especially Grafana and qBittorrent)
+- **Change qBittorrent default password immediately**
 - Enable Plex authentication
+- **Be cautious about exposing qBittorrent via tunnel** - consider VPN instead
 - Consider Cloudflare Access policies for additional security
 - Monitor access logs in Grafana
 - Regularly update services with `make update`
 - Use Grafana alerting for security events
+- Use VPN or proxy for qBittorrent if downloading copyrighted content
 
 ## 🔄 Adding More Services
 
@@ -334,14 +384,15 @@ Popular services to add:
 
 ### Media Management
 
-- **Sonarr** - TV show automation
-- **Radarr** - Movie automation
+- **Sonarr** - TV show automation (works great with qBittorrent)
+- **Radarr** - Movie automation (works great with qBittorrent)
 - **Prowlarr** - Indexer management
+- **Jackett** - Torrent tracker API support
 
 ### Download Clients
 
-- **qBittorrent** - Torrent client
 - **SABnzbd** - Usenet client
+- **Transmission** - Alternative torrent client
 
 ### Additional Monitoring
 
@@ -364,10 +415,10 @@ To add services:
 new-service:
   image: example/service:latest
   logging:
-    driver: loki
+    driver: json-file
     options:
-      loki-url: "http://localhost:3100/loki/api/v1/push"
-      loki-batch-size: "100"
+      max-size: "10m"
+      max-file: "3"
 ```
 
 ## 📝 Configuration Files
@@ -375,48 +426,4 @@ new-service:
 - `docker-compose.yaml` - Service definitions
 - `.env` - Environment variables (passwords, tokens, etc.)
 - `Makefile` - Management commands
-- `scripts/` - Setup and management scripts
-- `monitoring/` - Grafana, Loki, and Prometheus configurations
-
-## 💡 Tips
-
-- Use `make help` to see all available commands
-- Check logs with service-specific commands for easier debugging
-- Use Grafana to monitor system health and performance
-- Set up alerts in Grafana for critical system events
-- The tunnel provides secure access without exposing your home IP
-- All data persists on external HDD for easy backup/migration
-- Services restart automatically unless manually stopped
-- Use Grafana's explore feature to search logs effectively
-
-## 🆘 Support
-
-If you encounter issues:
-
-1. Check the troubleshooting section above
-2. Review logs: `make logs` or `make <service>-logs`
-3. Check Grafana dashboards for system health
-4. Ensure external HDD is properly mounted: `make status`
-5. Verify monitoring stack: `make monitoring-logs`
-6. Verify Cloudflare tunnel configuration: `make tunnel-status`
-7. Check Docker service status: `docker ps`
-
-## 🔗 Useful Links
-
-- [Plex Documentation](https://support.plex.tv/)
-- [Grafana Documentation](https://grafana.com/docs/)
-- [Loki Documentation](https://grafana.com/docs/loki/)
-- [Prometheus Documentation](https://prometheus.io/docs/)
-- [Cloudflare Tunnel Documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Raspberry Pi Documentation](https://www.raspberrypi.org/documentation/)
-
-## 🎯 What's Next?
-
-After your basic setup is running:
-
-1. **Explore Grafana Dashboards** - Create custom dashboards for your needs
-2. **Set Up Alerting** - Get notified when something goes wrong
-3. **Add Media Automation** - Install Sonarr/Radarr for automated downloads
-4. **Expand Storage** - Add more services as your needs grow
-5. **Backup Strategy** - Set up automated backups of your configurations
+- `scripts/` - Setup and management

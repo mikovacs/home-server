@@ -70,7 +70,7 @@ jobs:
         fi
         
         # Check that docker-compose.yml uses proper variable syntax
-        if grep -E '\$[A-Z_]+[^{:]' docker-compose.yaml; then
+        if grep -E '\$[A-Z_]+[^{:]' docker-compose.yml; then
           echo "⚠️  Found variables in docker-compose that might need \${} syntax"
         else
           echo "✅ Docker Compose environment variables look good"
@@ -91,57 +91,12 @@ jobs:
     - name: Create test environment
       run: |
         echo "🏗️ Creating test environment..."
-        mkdir -p test-volumes/{grafana,loki,prometheus}
+        mkdir -p test-volumes/{grafana,loki,prometheus,qbittorrent}
         chmod 777 test-volumes/*
         
-    - name: Create test Docker Compose
+    - name: Start monitoring and qBittorrent services
       run: |
-        cat > docker-compose.test.yml << 'EOF'
-        version: '3.8'
-        
-        services:
-          grafana:
-            image: grafana/grafana:latest
-            container_name: grafana-test
-            environment:
-              - GF_SECURITY_ADMIN_USER=admin
-              - GF_SECURITY_ADMIN_PASSWORD=test123
-              - GF_USERS_ALLOW_SIGN_UP=false
-            volumes:
-              - ./test-volumes/grafana:/var/lib/grafana
-            ports:
-              - "3000:3000"
-            networks:
-              - test-network
-              
-          loki:
-            image: grafana/loki:latest
-            container_name: loki-test
-            volumes:
-              - ./test-volumes/loki:/loki
-            ports:
-              - "3100:3100"
-            networks:
-              - test-network
-              
-          prometheus:
-            image: prom/prometheus:latest
-            container_name: prometheus-test
-            volumes:
-              - ./test-volumes/prometheus:/prometheus
-            ports:
-              - "9090:9090"
-            networks:
-              - test-network
-              
-        networks:
-          test-network:
-            driver: bridge
-        EOF
-        
-    - name: Start monitoring services
-      run: |
-        echo "🚀 Starting monitoring stack..."
+        echo "🚀 Starting services..."
         docker compose -f docker-compose.test.yml up -d
         
     - name: Wait for services to be ready
@@ -207,6 +162,25 @@ jobs:
           docker compose -f docker-compose.test.yml logs prometheus
           exit 1
         fi
+
+        # Wait for qBittorrent
+        echo "Waiting for qBittorrent..."
+        timeout=120
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:8080 > /dev/null 2>&1; then
+            echo "✅ qBittorrent is ready"
+            break
+          fi
+          echo "Waiting for qBittorrent... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
+        
+        if [ $timeout -eq 0 ]; then
+          echo "❌ qBittorrent timeout - showing logs:"
+          docker compose -f docker-compose.test.yml logs qbittorrent
+          exit 1
+        fi
         
     - name: Test service endpoints
       run: |
@@ -236,6 +210,11 @@ jobs:
         # Test Prometheus metrics
         curl -f http://localhost:9090/api/v1/query?query=up
         echo "✅ Prometheus metrics query passed"
+
+        # Test qBittorrent
+        echo "Testing qBittorrent..."
+        curl -f -s http://localhost:8080 > /dev/null
+        echo "✅ qBittorrent WebUI is accessible"
         
     - name: Show service logs on failure
       if: failure()
@@ -356,6 +335,7 @@ jobs:
         mkdir -p test-hdd/{plex/{config,transcode},media/{movies,tv,music}}
         mkdir -p test-hdd/{downloads/{complete,incomplete},backup,logs}
         mkdir -p test-hdd/cloudflared/config
+        mkdir -p test-hdd/qbittorrent/config
         mkdir -p test-hdd/monitoring/{grafana/{data,config},loki/{data,config},promtail/config,prometheus/{data,config}}
         
         # Set permissions
@@ -398,6 +378,22 @@ jobs:
               - ./test-hdd/monitoring/prometheus/data:/prometheus
             ports:
               - "9090:9090"
+            networks:
+              - integration-network
+
+          qbittorrent:
+            image: lscr.io/linuxserver/qbittorrent:latest
+            container_name: qbittorrent-integration
+            environment:
+              - PUID=1000
+              - PGID=1000
+              - TZ=America/New_York
+              - WEBUI_PORT=8080
+            volumes:
+              - ./test-hdd/qbittorrent/config:/config
+              - ./test-hdd/downloads:/downloads
+            ports:
+              - "8080:8080"
             networks:
               - integration-network
               
@@ -476,12 +472,33 @@ jobs:
           docker compose -f docker-compose.integration.yml logs prometheus
           exit 1
         fi
+
+        # Wait for qBittorrent with retry logic
+        echo "Waiting for qBittorrent to be ready..."
+        timeout=120
+        while [ $timeout -gt 0 ]; do
+          if curl -f -s http://localhost:8080 > /dev/null 2>&1; then
+            echo "✅ qBittorrent is ready"
+            break
+          fi
+          echo "Waiting for qBittorrent... ($timeout seconds left)"
+          sleep 5
+          timeout=$((timeout - 5))
+        done
+        
+        if [ $timeout -eq 0 ]; then
+          echo "❌ qBittorrent did not become ready in time"
+          echo "qBittorrent logs:"
+          docker compose -f docker-compose.integration.yml logs qbittorrent
+          exit 1
+        fi
         
         # Test all endpoints one more time to be sure
         echo "🧪 Final endpoint validation..."
         curl -f http://localhost:3000/api/health && echo "✅ Grafana final check passed"
         curl -f http://localhost:3100/ready && echo "✅ Loki final check passed"
         curl -f http://localhost:9090/-/healthy && echo "✅ Prometheus final check passed"
+        curl -f -s http://localhost:8080 > /dev/null && echo "✅ qBittorrent final check passed"
         
         echo "✅ Integration tests passed!"
         

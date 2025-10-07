@@ -14,6 +14,7 @@ echo -e "${YELLOW}Making scripts executable...${NC}"
 chmod +x scripts/external-hdd/*.sh
 chmod +x scripts/cloudflare/*.sh
 chmod +x scripts/monitoring/*.sh
+chmod +x scripts/qbittorrent/*.sh
 chmod +x scripts/create-env.sh
 
 echo -e "${GREEN}✓ Scripts are now executable${NC}"
@@ -46,9 +47,10 @@ echo -e "1. Run: ${YELLOW}make create-env${NC} to create environment file"
 echo -e "2. Edit the .env file with your tokens and passwords"
 echo -e "3. Run: ${YELLOW}sudo make mount${NC} to setup external HDD"
 echo -e "4. Run: ${YELLOW}make monitoring-setup${NC} to setup monitoring"
-echo -e "5. Run: ${YELLOW}make tunnel-setup${NC} to setup Cloudflare tunnel"
-echo -e "6. Run: ${YELLOW}make start${NC} to start all services"
-echo -e "7. Check status: ${YELLOW}make status${NC}"
+echo -e "5. Run: ${YELLOW}make qbittorrent-setup${NC} to setup qBittorrent"
+echo -e "6. Run: ${YELLOW}make tunnel-setup${NC} to setup Cloudflare tunnel"
+echo -e "7. Run: ${YELLOW}make start${NC} to start all services"
+echo -e "8. Check status: ${YELLOW}make status${NC}"
 
 if groups $USER | grep &>/dev/null '\bdocker\b'; then
     echo -e "\n${GREEN}✓ You're already in the docker group${NC}"

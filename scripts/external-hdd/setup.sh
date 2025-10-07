@@ -73,6 +73,7 @@ mkdir -p "$MOUNT_POINT"/{plex/{config,transcode},media/{movies,tv,music}}
 # Additional directories for future services
 mkdir -p "$MOUNT_POINT"/{downloads/{complete,incomplete},backup,logs}
 mkdir -p "$MOUNT_POINT"/cloudflared/config
+mkdir -p "$MOUNT_POINT"/qbittorrent/config
 mkdir -p "$MOUNT_POINT"/monitoring/{grafana/{data,config},loki/{data,config},promtail/config,prometheus/{data,config}}
 
 # Set permissions
