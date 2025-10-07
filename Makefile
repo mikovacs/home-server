@@ -26,20 +26,20 @@ monitoring-setup:
 
 start:
 	@echo "🚀 Starting services..."
-	docker-compose up -d
+	docker compose up -d
 
 start-safe:
 	@echo "🚀 Starting services safely (monitoring first)..."
 	@echo "Starting monitoring stack first..."
-	docker-compose up -d loki prometheus node-exporter
+	docker compose up -d loki prometheus node-exporter
 	@echo "Waiting for Loki to be ready..."
 	sleep 10
 	@echo "Starting remaining services..."
-	docker-compose up -d
+	docker compose up -d
 
 stop:
 	@echo "🛑 Stopping services..."
-	docker-compose down
+	docker compose down
 
 status:
 	@echo "📊 Checking status..."
@@ -59,43 +59,43 @@ tunnel-restart:
 
 logs:
 	@echo "📋 Showing logs..."
-	docker-compose logs -f
+	docker compose logs -f
 
 grafana-logs:
-	docker-compose logs -f grafana
+	docker compose logs -f grafana
 
 loki-logs:
-	docker-compose logs -f loki
+	docker compose logs -f loki
 
 prometheus-logs:
-	docker-compose logs -f prometheus
+	docker compose logs -f prometheus
 
 monitoring-logs:
-	docker-compose logs -f grafana loki prometheus promtail node-exporter
+	docker compose logs -f grafana loki prometheus promtail node-exporter
 
 update:
 	@echo "🔄 Updating services..."
-	docker-compose pull
-	docker-compose up -d
+	docker compose pull
+	docker compose up -d
 
 clean:
 	@echo "🧹 Cleaning up..."
-	docker-compose down -v
+	docker compose down -v
 	docker system prune -f
 
 plex-logs:
-	docker-compose logs -f plex
+	docker compose logs -f plex
 
 restart-plex:
-	docker-compose restart plex
+	docker compose restart plex
 
 start-monitoring:
 	@echo "📊 Starting monitoring services..."
-	docker-compose up -d grafana loki promtail prometheus node-exporter
+	docker compose up -d grafana loki promtail prometheus node-exporter
 
 stop-monitoring:
 	@echo "📊 Stopping monitoring services..."
-	docker-compose stop grafana loki promtail prometheus node-exporter
+	docker compose stop grafana loki promtail prometheus node-exporter
 
 help:
 	@echo "🏠 Home Server Commands:"
@@ -134,19 +134,19 @@ test-all: validate-config test-monitoring test-scripts
 
 validate-config:
 	@echo "🔍 Validating configuration..."
-	docker-compose config > /dev/null
+	docker compose config > /dev/null
 	@echo "✅ Docker Compose syntax is valid"
 	find scripts -name "*.sh" -exec bash -n {} \;
 	@echo "✅ All scripts have valid syntax"
 
 test-monitoring:
 	@echo "🧪 Testing monitoring stack..."
-	docker-compose -f docker-compose.test.yml up -d
+	docker compose -f docker-compose.test.yml up -d
 	sleep 30
-	curl -f http://localhost:3000/api/health || (docker-compose -f docker-compose.test.yml logs && exit 1)
-	curl -f http://localhost:3100/ready || (docker-compose -f docker-compose.test.yml logs && exit 1)
-	curl -f http://localhost:9090/-/healthy || (docker-compose -f docker-compose.test.yml logs && exit 1)
-	docker-compose -f docker-compose.test.yml down -v
+	curl -f http://localhost:3000/api/health || (docker compose -f docker-compose.test.yml logs && exit 1)
+	curl -f http://localhost:3100/ready || (docker compose -f docker-compose.test.yml logs && exit 1)
+	curl -f http://localhost:9090/-/healthy || (docker compose -f docker-compose.test.yml logs && exit 1)
+	docker compose -f docker-compose.test.yml down -v
 	@echo "✅ Monitoring stack tests passed"
 
 test-scripts:
@@ -158,7 +158,7 @@ test-scripts:
 
 test-cleanup:
 	@echo "🧹 Cleaning up test artifacts..."
-	docker-compose -f docker-compose.test.yml down -v 2>/dev/null || true
-	docker-compose -f docker-compose.integration.yml down -v 2>/dev/null || true
+	docker compose -f docker-compose.test.yml down -v 2>/dev/null || true
+	docker compose -f docker-compose.integration.yml down -v 2>/dev/null || true
 	rm -f .env docker-compose.test.yml docker-compose.integration.yml
 	docker system prune -f
