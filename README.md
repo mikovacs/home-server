@@ -2,6 +2,8 @@
 
 A Docker-based home server setup for Raspberry Pi with Plex media server, external HDD management, secure remote access via Cloudflare Tunnel, and comprehensive monitoring with Grafana.
 
+![CI/CD Status](https://github.com/yourusername/home-server/workflows/Home%20Server%20CI%2FCD/badge.svg)
+
 ## 📋 Prerequisites
 
 - Raspberry Pi (4 recommended) with Raspberry Pi OS

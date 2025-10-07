@@ -1,4 +1,4 @@
-.PHONY: setup start stop status logs clean update tunnel-setup tunnel-status tunnel-logs monitoring-setup create-env mount help
+.PHONY: setup start stop status logs clean update tunnel-setup tunnel-status tunnel-logs monitoring-setup create-env mount help test-all validate-config test-monitoring test-scripts test-cleanup
 
 setup:
 	@echo "🏠 Setting up home server..."
@@ -127,3 +127,38 @@ help:
 	@echo "🎬 Plex:"
 	@echo "  plex-logs         - Show Plex logs"
 	@echo "  restart-plex      - Restart Plex service"
+
+# Test targets for CI/CD
+test-all: validate-config test-monitoring test-scripts
+    @echo "🎉 All tests passed!"
+
+validate-config:
+    @echo "🔍 Validating configuration..."
+    docker-compose config > /dev/null
+    @echo "✅ Docker Compose syntax is valid"
+    find scripts -name "*.sh" -exec bash -n {} \;
+    @echo "✅ All scripts have valid syntax"
+
+test-monitoring:
+    @echo "🧪 Testing monitoring stack..."
+    docker-compose -f docker-compose.test.yml up -d
+    sleep 30
+    curl -f http://localhost:3000/api/health || (docker-compose -f docker-compose.test.yml logs && exit 1)
+    curl -f http://localhost:3100/ready || (docker-compose -f docker-compose.test.yml logs && exit 1)
+    curl -f http://localhost:9090/-/healthy || (docker-compose -f docker-compose.test.yml logs && exit 1)
+    docker-compose -f docker-compose.test.yml down -v
+    @echo "✅ Monitoring stack tests passed"
+
+test-scripts:
+    @echo "🧪 Testing scripts..."
+    chmod +x scripts/**/*.sh
+    ./scripts/create-env.sh
+    test -f .env
+    @echo "✅ Script tests passed"
+
+test-cleanup:
+    @echo "🧹 Cleaning up test artifacts..."
+    docker-compose -f docker-compose.test.yml down -v 2>/dev/null || true
+    docker-compose -f docker-compose.integration.yml down -v 2>/dev/null || true
+    rm -f .env docker-compose.test.yml docker-compose.integration.yml
+    docker system prune -f
