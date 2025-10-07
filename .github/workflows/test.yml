@@ -35,7 +35,7 @@ jobs:
     - name: Validate Docker Compose syntax
       run: |
         echo "🔍 Validating Docker Compose..."
-        docker-compose config > /dev/null
+        docker compose config > /dev/null
         echo "✅ Docker Compose syntax is valid"
         
     - name: Check script permissions and syntax
