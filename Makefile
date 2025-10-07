@@ -1,4 +1,4 @@
-.PHONY: setup start stop status logs clean update tunnel-setup tunnel-status tunnel-logs monitoring-setup create-env mount help test-all validate-config test-monitoring test-scripts test-cleanup
+.PHONY: setup start stop status logs clean update tunnel-setup tunnel-status tunnel-logs monitoring-setup qbittorrent-setup create-env mount help test-all validate-config test-monitoring test-scripts test-cleanup
 
 setup:
 	@echo "🏠 Setting up home server..."
@@ -6,6 +6,7 @@ setup:
 	chmod +x scripts/external-hdd/*.sh
 	chmod +x scripts/cloudflare/*.sh
 	chmod +x scripts/monitoring/*.sh
+	chmod +x scripts/qbittorrent/*.sh
 	chmod +x scripts/create-env.sh
 	./scripts/setup.sh
 
@@ -24,6 +25,10 @@ tunnel-setup:
 monitoring-setup:
 	@echo "📊 Setting up monitoring stack..."
 	sudo ./scripts/monitoring/setup.sh
+
+qbittorrent-setup:
+	@echo "📥 Setting up qBittorrent..."
+	sudo ./scripts/torrent/setup.sh
 
 start:
 	@echo "🚀 Starting services..."
@@ -71,6 +76,9 @@ loki-logs:
 prometheus-logs:
 	docker compose logs -f prometheus
 
+qbittorrent-logs:
+	docker compose logs -f qbittorrent
+
 monitoring-logs:
 	docker compose logs -f grafana loki prometheus promtail node-exporter
 
@@ -90,6 +98,9 @@ plex-logs:
 restart-plex:
 	docker compose restart plex
 
+restart-qbittorrent:
+	docker compose restart qbittorrent
+
 start-monitoring:
 	@echo "📊 Starting monitoring services..."
 	docker compose up -d grafana loki promtail prometheus node-exporter
@@ -105,6 +116,7 @@ help:
 	@echo "  mount             - Setup external HDD"
 	@echo "  tunnel-setup      - Setup Cloudflare Tunnel"
 	@echo "  monitoring-setup  - Setup monitoring stack"
+	@echo "  qbittorrent-setup - Setup qBittorrent"
 	@echo "  start             - Start all services"
 	@echo "  start-safe        - Start services with proper order"
 	@echo "  stop              - Stop all services"
@@ -128,6 +140,10 @@ help:
 	@echo "🎬 Plex:"
 	@echo "  plex-logs         - Show Plex logs"
 	@echo "  restart-plex      - Restart Plex service"
+	@echo ""
+	@echo "📥 qBittorrent:"
+	@echo "  qbittorrent-logs    - Show qBittorrent logs"
+	@echo "  restart-qbittorrent - Restart qBittorrent service"
 
 # Test targets for CI/CD
 test-all: validate-config test-monitoring test-scripts
@@ -147,6 +163,7 @@ test-monitoring:
 	curl -f http://localhost:3000/api/health || (docker compose -f docker-compose.test.yml logs && exit 1)
 	curl -f http://localhost:3100/ready || (docker compose -f docker-compose.test.yml logs && exit 1)
 	curl -f http://localhost:9090/-/healthy || (docker compose -f docker-compose.test.yml logs && exit 1)
+	curl -f -s http://localhost:8080 > /dev/null || (docker compose -f docker-compose.test.yml logs && exit 1)
 	docker compose -f docker-compose.test.yml down -v
 	@echo "✅ Monitoring stack tests passed"
 

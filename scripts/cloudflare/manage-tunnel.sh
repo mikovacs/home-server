@@ -66,6 +66,7 @@ show_config() {
     echo "- Plex: http://plex:32400"
     echo "- Grafana: http://grafana:3000"
     echo "- Prometheus: http://prometheus:9090"
+    echo "- qBittorrent: http://qbittorrent:8080"
     echo "- Add more services as needed"
 }
 

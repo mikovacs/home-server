@@ -32,7 +32,7 @@ else
 fi
 
 echo -e "\n${YELLOW}Service Health:${NC}"
-services=("plex" "grafana" "loki" "prometheus" "cloudflared")
+services=("plex" "grafana" "loki" "prometheus" "cloudflared" "qbittorrent")
 for service in "${services[@]}"; do
     if docker compose ps "$service" 2>/dev/null | grep -q "Up"; then
         echo -e "${GREEN}✓ $service is running${NC}"
