@@ -1,0 +1,175 @@
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Budapest}
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM}
+    volumes:
+      - plex_config:/config
+      - plex_transcode:/transcode
+      - media_movies:/data/movies
+      - media_tv:/data/tv
+      - media_kidsMovies:/data/kids_movies
+      - media_kidsTV:/data/kids_tv
+      - media_music:/data/music
+    ports:
+      - "32400:32400"
+      - "1900:1900/udp"
+      - "3005:3005"
+      - "5353:5353/udp"
+      - "8324:8324"
+      - "32410:32410/udp"
+      - "32412:32412/udp"
+      - "32413:32413/udp"
+      - "32414:32414/udp"
+      - "32469:32469"
+    restart: unless-stopped
+    networks:
+      - homeserver
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:32400/web"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    volumes:
+      - cloudflared_config:/home/nonroot/.cloudflared
+    networks:
+      - homeserver
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "https://www.cloudflare.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Budapest}
+      - WEBUI_PORT=8081
+    volumes:
+      - qbittorrent_config:/config
+      - downloads_complete:/downloads
+      - downloads_incomplete:/downloads/incomplete
+    ports:
+      - "8081:8081"
+      - "6881:6881"
+      - "6881:6881/udp"
+    networks:
+      - homeserver
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  # Media volumes
+  plex_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/plex/config
+  
+  plex_transcode:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/plex/transcode
+  
+  media_movies:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/media/movies
+  
+  media_tv:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/media/tv
+
+  media_kidsMovies:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/media/kids_movies
+
+  media_kidsTV:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/media/kids_tv
+
+  # Download volumes
+  qbittorrent_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/qbittorrent/config
+
+  downloads_complete:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/downloads/complete
+
+  downloads_incomplete:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/downloads/incomplete
+
+  # Cloudflare volume
+  cloudflared_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/cloudflared/config
+
+networks:
+  homeserver:
+    driver: bridge
