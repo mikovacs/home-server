@@ -41,7 +41,25 @@ check_mounted() {
 # Function to list available disks
 list_disks() {
     echo -e "${BLUE}Available disks:${NC}"
-    diskutil list
+    
+    # Detect OS and use appropriate command
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        if command -v diskutil &> /dev/null; then
+            diskutil list
+        else
+            echo "diskutil not found"
+        fi
+    else
+        # Linux
+        if command -v lsblk &> /dev/null; then
+            lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE
+        elif command -v fdisk &> /dev/null; then
+            sudo fdisk -l | grep "^/dev"
+        else
+            ls -la /dev/sd* /dev/nvme* 2>/dev/null || echo "No block devices found"
+        fi
+    fi
 }
 
 # Function to mount HDD
@@ -53,12 +71,21 @@ mount_hdd() {
     list_disks
     
     echo ""
-    echo "Enter the disk identifier (e.g., disk2s1) or 'q' to quit:"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "Enter the disk identifier (e.g., disk2s1) or 'q' to quit:"
+    else
+        echo "Enter the device path (e.g., /dev/sdb1 or sdb1) or 'q' to quit:"
+    fi
     read -p "> " disk_id
     
     if [ "$disk_id" = "q" ]; then
         echo -e "${RED}Setup cancelled${NC}"
         exit 1
+    fi
+    
+    # Normalize disk path for Linux (add /dev/ if not present)
+    if [[ "$OSTYPE" != "darwin"* ]] && [[ ! "$disk_id" == /dev/* ]]; then
+        disk_id="/dev/$disk_id"
     fi
     
     # Create mount point if it doesn't exist
@@ -67,18 +94,31 @@ mount_hdd() {
         sudo mkdir -p "$MOUNT_POINT"
     fi
     
-    # Mount the disk
-    echo -e "${YELLOW}Mounting /dev/$disk_id to $MOUNT_POINT${NC}"
-    sudo mount -t apfs "/dev/$disk_id" "$MOUNT_POINT" 2>/dev/null || \
-    sudo mount -t hfs "/dev/$disk_id" "$MOUNT_POINT" 2>/dev/null || \
-    sudo mount -t exfat "/dev/$disk_id" "$MOUNT_POINT" 2>/dev/null || \
-    sudo diskutil mount -mountPoint "$MOUNT_POINT" "$disk_id"
+    # Mount the disk based on OS
+    echo -e "${YELLOW}Mounting $disk_id to $MOUNT_POINT${NC}"
+    
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS mounting
+        sudo mount -t apfs "/dev/$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo mount -t hfs "/dev/$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo mount -t exfat "/dev/$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo diskutil mount -mountPoint "$MOUNT_POINT" "$disk_id"
+    else
+        # Linux mounting - try common filesystems
+        sudo mount -t ext4 "$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo mount -t ntfs-3g "$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo mount -t ntfs "$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo mount -t exfat "$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo mount -t vfat "$disk_id" "$MOUNT_POINT" 2>/dev/null || \
+        sudo mount "$disk_id" "$MOUNT_POINT"
+    fi
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ HDD mounted successfully${NC}"
         return 0
     else
         echo -e "${RED}✗ Failed to mount HDD${NC}"
+        echo -e "${YELLOW}Tip: Make sure the device exists and you have the correct filesystem drivers installed${NC}"
         return 1
     fi
 }
