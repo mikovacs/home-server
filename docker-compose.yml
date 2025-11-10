@@ -35,12 +35,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:32400/web"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -58,12 +52,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "https://www.cloudflare.com"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -89,15 +77,13 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+
+networks:
+  homeserver:
+    driver: bridge
 
 volumes:
-  # Media volumes
+  # Plex volumes
   plex_config:
     driver: local
     driver_opts:
@@ -112,6 +98,7 @@ volumes:
       o: bind
       device: /mnt/external-hdd/plex/transcode
   
+  # Media volumes
   media_movies:
     driver: local
     driver_opts:
@@ -125,51 +112,54 @@ volumes:
       type: none
       o: bind
       device: /mnt/external-hdd/media/tv
-
+  
   media_kidsMovies:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /mnt/external-hdd/media/kids_movies
-
+  
   media_kidsTV:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /mnt/external-hdd/media/kids_tv
-
-  # Download volumes
+  
+  media_music:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-hdd/media/music
+  
+  # qBittorrent volumes
   qbittorrent_config:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /mnt/external-hdd/qbittorrent/config
-
+  
   downloads_complete:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /mnt/external-hdd/downloads/complete
-
+  
   downloads_incomplete:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /mnt/external-hdd/downloads/incomplete
-
-  # Cloudflare volume
+  
+  # Cloudflared volume
   cloudflared_config:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /mnt/external-hdd/cloudflared/config
-
-networks:
-  homeserver:
-    driver: bridge
+      device: /mnt/external-hdd/cloudflared
