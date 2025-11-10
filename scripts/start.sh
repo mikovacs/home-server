@@ -18,7 +18,7 @@ validate_cloudflare_token() {
     local token=$1
     # Cloudflare tokens are base64-encoded and typically start with "eyJ"
     if [[ ! $token =~ ^eyJ ]]; then
-        echo -e "${YELLOW}Warning: Token doesn't match expected format (should start with 'eyJ')${NC}"
+        echo -e "${YELLOW}Warning: Token doesn't match expected format (should start with 'eyJ')${NC}" >&2
         read -p "Continue anyway? (y/N): " continue
         if [[ ! $continue =~ ^[Yy]$ ]]; then
             return 1
@@ -102,12 +102,13 @@ prompt_for_variable() {
     local is_required=$4
     
     if [ -n "$current_value" ]; then
-        echo -e "${YELLOW}$var_description${NC}"
         # Mask sensitive values in display (show only first 20 chars)
         if [[ "$var_name" == *"TOKEN"* ]] || [[ "$var_name" == *"CLAIM"* ]]; then
-            echo "Current value: ${current_value:0:20}***"
+            echo -e "${YELLOW}$var_description${NC}" >&2
+            echo "Current value: ${current_value:0:20}***" >&2
         else
-            echo "Current value: $current_value"
+            echo -e "${YELLOW}$var_description${NC}" >&2
+            echo "Current value: $current_value" >&2
         fi
         read -p "Keep this value? (Y/n): " keep_value
         keep_value=${keep_value:-Y}
@@ -118,7 +119,7 @@ prompt_for_variable() {
         fi
     fi
     
-    echo -e "${YELLOW}$var_description${NC}"
+    echo -e "${YELLOW}$var_description${NC}" >&2
     if [ "$is_required" = true ]; then
         while true; do
             read -p "Enter $var_name: " new_value
@@ -134,7 +135,7 @@ prompt_for_variable() {
                     return 0
                 fi
             else
-                echo -e "${RED}This value is required!${NC}"
+                echo -e "${RED}This value is required!${NC}" >&2
             fi
         done
     else
