@@ -114,6 +114,21 @@ else
 fi
 
 echo
+echo -e "${YELLOW}Service Health:${NC}"
+if [ -n "${COMPOSE_CMD[*]:-}" ]; then
+    # Show container health status
+    docker ps --format 'table {{.Names}}\t{{.Status}}' --filter "name=plex|qbittorrent|cloudflared"
+fi
+
+echo
+echo -e "${YELLOW}Recent Logs (last 10 lines per service):${NC}"
+for service in plex qbittorrent cloudflared; do
+    echo ""
+    echo -e "${GREEN}=== $service ===${NC}"
+    docker logs --tail 10 "$service" 2>&1 || echo "Container not running"
+done
+
+echo
 echo -e "${GREEN}Status report complete.${NC}"
 
 exit 0

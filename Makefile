@@ -1,4 +1,4 @@
-.PHONY: help start stop restart status setup-hdd logs down clean audit-security
+.PHONY: help start stop restart status setup-hdd logs down clean audit-security backup
 
 # Default target - show help
 help:
@@ -14,7 +14,9 @@ help:
 	@echo "  make down          - Stop and remove all containers"
 	@echo "  make clean         - Stop containers and remove volumes (WARNING: deletes data)"
 	@echo "  make audit-security - Check .env security configuration"
+	@echo "  make backup        - Backup configurations and .env (encrypted)"
 	@echo ""
+	@echo "For more information, see the README.md file."
 
 # Start services (runs configuration script which starts docker-compose)
 start:
@@ -62,3 +64,7 @@ clean:
 audit-security:
 	@chmod +x scripts/audit-env.sh
 	@./scripts/audit-env.sh
+
+backup:
+    @chmod +x scripts/backup.sh
+    @./scripts/backup.sh
