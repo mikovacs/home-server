@@ -170,13 +170,6 @@ echo "" >> "$TEMP_ENV"
 # Timezone
 prompt_for_variable "TZ" "Timezone (e.g., Europe/Budapest, America/New_York)" "$TZ" false >> "$TEMP_ENV"
 
-# Plex Claim Token
-echo ""
-echo -e "${YELLOW}Plex Claim Token${NC}"
-echo "Get your claim token from: https://www.plex.tv/claim/"
-echo -e "${GREEN}NOTE: This is only needed for first-time setup and can be removed after${NC}"
-prompt_for_variable "PLEX_CLAIM" "Plex Claim Token (optional, expires in 4 minutes)" "$PLEX_CLAIM" false >> "$TEMP_ENV"
-
 # Cloudflare Tunnel Token
 echo ""
 prompt_for_variable "CLOUDFLARE_TUNNEL_TOKEN" "Cloudflare Tunnel Token" "$CLOUDFLARE_TUNNEL_TOKEN" true >> "$TEMP_ENV"
@@ -187,7 +180,7 @@ echo "================================"
 echo -e "${GREEN}Review your configuration:${NC}"
 echo "================================"
 # Mask sensitive values in display
-sed 's/CLOUDFLARE_TUNNEL_TOKEN=.*/CLOUDFLARE_TUNNEL_TOKEN=***MASKED***/; s/PLEX_CLAIM=.*/PLEX_CLAIM=***MASKED***/' "$TEMP_ENV"
+sed 's/CLOUDFLARE_TUNNEL_TOKEN=.*/CLOUDFLARE_TUNNEL_TOKEN=***MASKED***/' "$TEMP_ENV"
 echo ""
 read -p "Save this configuration? (Y/n): " confirm
 confirm=${confirm:-Y}
@@ -227,7 +220,6 @@ if [[ $confirm =~ ^[Yy]$ ]]; then
         echo ""
         echo -e "${YELLOW}Security reminders:${NC}"
         echo "  ✓ .env file permissions set to 600"
-        echo "  ✓ After Plex setup completes, remove PLEX_CLAIM from .env"
         echo "  ✓ .env is in .gitignore (never commit secrets)"
         echo "  ✓ Backup CLOUDFLARE_TUNNEL_TOKEN in password manager"
         echo ""

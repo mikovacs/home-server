@@ -3,11 +3,10 @@ services:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-Europe/Budapest}
       - VERSION=docker
-      - PLEX_CLAIM=${PLEX_CLAIM}
     volumes:
       - plex_config:/config
       - plex_transcode:/transcode
@@ -35,31 +34,20 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared
-    restart: unless-stopped
-    command: tunnel run
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-    volumes:
-      - cloudflared_config:/home/nonroot/.cloudflared
-    networks:
-      - homeserver
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:32400/web"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - TZ=${TZ:-Europe/Budapest}
       - WEBUI_PORT=8081
     volumes:
@@ -77,6 +65,35 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/8081' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    volumes:
+      - cloudflared_config:/home/nonroot/.cloudflared
+    networks:
+      - homeserver
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep cloudflared || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
   homeserver:
@@ -118,14 +135,14 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /mnt/external-hdd/media/kids_movies
+      device: /mnt/external-hdd/media/movies/kids_movies
   
   media_kidsTV:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /mnt/external-hdd/media/kids_tv
+      device: /mnt/external-hdd/media/tv/kids_tv
   
   media_music:
     driver: local

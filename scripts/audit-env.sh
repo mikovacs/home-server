@@ -31,13 +31,26 @@ else
     echo "  Fix with: chmod 600 $ENV_FILE"
 fi
 
-# Check if PLEX_CLAIM is still present and has a value
-if grep -q "^PLEX_CLAIM=.\+" "$ENV_FILE"; then
-    echo -e "${YELLOW}⚠ PLEX_CLAIM still has a value${NC}"
-    echo "  This should only be present during initial setup"
-    echo "  Remove after Plex is configured"
+# Check TZ variable
+if grep -q "^TZ=.\+" "$ENV_FILE"; then
+    echo -e "${GREEN}✓ TZ (timezone) configured${NC}"
 else
-    echo -e "${GREEN}✓ PLEX_CLAIM removed or empty (good)${NC}"
+    echo -e "${YELLOW}⚠ TZ not set (will use default)${NC}"
+fi
+
+# Check PUID/PGID match current user
+if grep -q "^PUID=.\+" "$ENV_FILE" && grep -q "^PGID=.\+" "$ENV_FILE"; then
+    env_puid=$(grep "^PUID=" "$ENV_FILE" | cut -d= -f2)
+    env_pgid=$(grep "^PGID=" "$ENV_FILE" | cut -d= -f2)
+    current_uid=$(id -u)
+    current_gid=$(id -g)
+    
+    if [ "$env_puid" != "$current_uid" ] || [ "$env_pgid" != "$current_gid" ]; then
+        echo -e "${YELLOW}⚠ PUID/PGID ($env_puid/$env_pgid) doesn't match current user ($current_uid/$current_gid)${NC}"
+        echo "  This may cause permission issues with external HDD"
+    else
+        echo -e "${GREEN}✓ PUID/PGID matches current user${NC}"
+    fi
 fi
 
 # Check if CLOUDFLARE_TUNNEL_TOKEN exists
