@@ -117,7 +117,7 @@ echo
 echo -e "${YELLOW}Service Health:${NC}"
 if [ -n "${COMPOSE_CMD[*]:-}" ]; then
     # Show container health status
-    docker ps --format 'table {{.Names}}\t{{.Status}}' --filter "name=plex|qbittorrent|cloudflared"
+    docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E 'plex|qbittorrent|cloudflared'
 fi
 
 echo
