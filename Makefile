@@ -1,4 +1,4 @@
-.PHONY: help start stop restart status setup-hdd logs down clean audit-security backup
+.PHONY: help start stop restart status setup-hdd logs down clean audit-security backup update
 
 # Default target - show help
 help:
@@ -15,6 +15,7 @@ help:
 	@echo "  make clean         - Stop containers and remove volumes (WARNING: deletes data)"
 	@echo "  make audit-security - Check .env security configuration"
 	@echo "  make backup        - Backup configurations and .env (encrypted)"
+	@echo "  make update        - Update Docker images and restart services"
 	@echo ""
 	@echo "For more information, see the README.md file."
 
@@ -66,5 +67,10 @@ audit-security:
 	@./scripts/audit-env.sh
 
 backup:
-    @chmod +x scripts/backup.sh
-    @./scripts/backup.sh
+	@chmod +x scripts/backup.sh
+	@./scripts/backup.sh
+
+# Update Docker images
+update:
+	@chmod +x scripts/update.sh
+	@./scripts/update.sh
