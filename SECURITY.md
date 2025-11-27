@@ -56,7 +56,7 @@ All backups containing sensitive data **must** be encrypted:
 make backup
 
 # Verify backup integrity
-openssl enc -aes-256-cbc -d -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc -out /dev/null
+openssl enc -aes-256-cbc -d -pbkdf2 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc -out /dev/null
 
 # Store backup password securely in password manager
 ```
@@ -248,7 +248,7 @@ If you suspect a security breach:
    # 2. Update .env with new token
    
    # Restore from clean backup
-   openssl enc -aes-256-cbc -d -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
+   openssl enc -aes-256-cbc -d -pbkdf2 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
    
    # Rebuild containers
    docker-compose down
