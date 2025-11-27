@@ -15,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `make update` command to [`Makefile`](Makefile)
 - Added `make backup` command to [`Makefile`](Makefile)
 - Added health checks to all services in [`docker-compose.yml`](docker-compose.yml)
-- Added Docker Compose version specification (3.8)
 - Added PUID/PGID environment variables to [`.env.example`](.env.example)
 - Enhanced [`scripts/show-status.sh`](scripts/show-status.sh) with service health and recent logs
 - Enhanced [`scripts/audit-env.sh`](scripts/audit-env.sh) with TZ and PUID/PGID validation
