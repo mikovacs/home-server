@@ -42,7 +42,7 @@ restore_env_file() {
     stored_hmac=$(cat "$hmac_file")
     
     if [ "$computed_hmac" != "$stored_hmac" ]; then
-        echo -e "${RED}✗ Integrity verification failed! Backup may be tampered or password is incorrect.${NC}"
+        echo -e "${RED}✗ Integrity verification failed! Backup may have been tampered with or password is incorrect.${NC}"
         return 1
     fi
     
