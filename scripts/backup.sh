@@ -39,8 +39,11 @@ CONFIGS=("plex/config" "qbittorrent/config" "cloudflared")
 for config in "${CONFIGS[@]}"; do
     if [ -d "$MOUNT_POINT/$config" ]; then
         echo "Backing up $config..."
-        tar czf "$BACKUP_DIR/${config//\//_}_${TIMESTAMP}.tar.gz" -C "$MOUNT_POINT" "$config"
-        echo -e "${GREEN}✓ $config backed up${NC}"
+        if tar czf "$BACKUP_DIR/${config//\//_}_${TIMESTAMP}.tar.gz" -C "$MOUNT_POINT" "$config"; then
+            echo -e "${GREEN}✓ $config backed up${NC}"
+        else
+            echo -e "${RED}✗ Failed to backup $config${NC}"
+        fi
     fi
 done
 
