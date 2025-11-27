@@ -10,8 +10,8 @@ MOUNT_POINT="/mnt/external-hdd"
 BACKUP_DIR="${BACKUP_DIR:-$HOME/backups/home-server}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# Encryption parameters (AES-256-GCM for integrity protection, PBKDF2 for key derivation)
-ENC_CIPHER="aes-256-gcm"
+# Encryption parameters (AES-256-CBC with PBKDF2 for strong key derivation)
+ENC_CIPHER="aes-256-cbc"
 ENC_OPTS="-salt -pbkdf2 -iter 100000"
 
 echo -e "${GREEN}Home Server Backup Script${NC}"
@@ -56,4 +56,4 @@ echo -e "${GREEN}Backup complete!${NC}"
 echo "Location: $BACKUP_DIR"
 echo ""
 echo "To restore .env:"
-echo "  openssl enc -${ENC_CIPHER} -d -pbkdf2 -iter 100000 -in $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc | tar xz"
+echo "  openssl enc -${ENC_CIPHER} -d ${ENC_OPTS} -in $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc | tar xz"
