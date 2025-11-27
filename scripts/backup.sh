@@ -10,12 +10,10 @@ MOUNT_POINT="/mnt/external-hdd"
 BACKUP_DIR="${BACKUP_DIR:-$HOME/backups/home-server}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# Derive HMAC key from password using PBKDF2 with different salt
-derive_hmac_key() {
-    local password="$1"
-    # Use a fixed salt prefix to derive a separate key for HMAC
-    echo -n "$password" | openssl dgst -sha256 -hmac "hmac-key-derivation-salt" | awk '{print $2}'
-}
+# Source shared crypto utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./crypto-utils.sh
+source "$SCRIPT_DIR/crypto-utils.sh"
 
 backup_env_file() {
     local -r ENV_BACKUP="$BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc"
@@ -91,8 +89,4 @@ echo ""
 echo "To restore .env, use the restore script:"
 echo "  ./scripts/restore.sh $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc"
 echo ""
-echo "Manual restore (verify integrity first):"
-echo "  1. Read password securely: read -rs PASSWORD"
-echo "  2. Derive HMAC key: HMAC_KEY=\$(echo -n \"\$PASSWORD\" | openssl dgst -sha256 -hmac \"hmac-key-derivation-salt\" | awk '{print \$2}')"
-echo "  3. Verify: openssl dgst -sha256 -hmac \"\$HMAC_KEY\" $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc | awk '{print \$2}' | diff - $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc.hmac"
-echo "  4. Decrypt: openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc | tar xz"
+echo "Or use 'make restore BACKUP_FILE=$BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc'"

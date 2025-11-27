@@ -6,11 +6,10 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Derive HMAC key from password using PBKDF2 with different salt
-derive_hmac_key() {
-    local password="$1"
-    echo -n "$password" | openssl dgst -sha256 -hmac "hmac-key-derivation-salt" | awk '{print $2}'
-}
+# Source shared crypto utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./crypto-utils.sh
+source "$SCRIPT_DIR/crypto-utils.sh"
 
 restore_env_file() {
     local -r enc_file="$1"
