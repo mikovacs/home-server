@@ -89,7 +89,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "cloudflared", "tunnel", "info"]
+      test: ["CMD-SHELL", "pgrep cloudflared || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
