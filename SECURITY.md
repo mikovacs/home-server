@@ -42,7 +42,7 @@ This project uses sensitive credentials that must be protected:
 
 All backups containing sensitive data **must** be encrypted:
 
-1. **`.env` backups**: Automatically encrypted with AES-256-CBC by backup script
+1. **`.env` backups**: Automatically encrypted with AES-256-CBC and protected with HMAC-SHA256 for integrity verification
 2. **Password protection**: You'll be prompted for encryption password
 3. **Secure storage**: Store encrypted backups in multiple locations:
    - Local encrypted drive
@@ -57,6 +57,8 @@ make backup
 
 # Verify backup integrity
 openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc -out /dev/null
+# Restore from backup (includes integrity verification)
+./scripts/restore.sh ~/backups/home-server/env_TIMESTAMP.tar.gz.enc
 
 # Store backup password securely in password manager
 ```
@@ -65,8 +67,8 @@ openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_T
 
 When restoring from backups:
 
-1. Verify backup source is trusted
-2. Scan restored files for tampering
+1. Use the restore script which verifies integrity before decryption
+2. Verify backup source is trusted
 3. Rotate all tokens after restore
 4. Audit security configuration: `make audit-security`
 
@@ -253,6 +255,8 @@ If you suspect a security breach:
    
    # Restore from clean backup
    openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
+   # Restore from clean backup (verifies integrity and decrypts)
+   ./scripts/restore.sh ~/backups/home-server/env_TIMESTAMP.tar.gz.enc
    
    # Rebuild containers
    docker-compose down

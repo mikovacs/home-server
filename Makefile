@@ -1,4 +1,4 @@
-.PHONY: help start stop restart status setup-hdd logs down clean audit-security backup update
+.PHONY: help start stop restart status setup-hdd logs down clean audit-security backup restore update
 
 # Default target - show help
 help:
@@ -15,6 +15,7 @@ help:
 	@echo "  make clean         - Stop containers and remove volumes (WARNING: deletes data)"
 	@echo "  make audit-security - Check .env security configuration"
 	@echo "  make backup        - Backup configurations and .env (encrypted)"
+	@echo "  make restore       - Restore .env from encrypted backup"
 	@echo "  make update        - Update Docker images and restart services"
 	@echo ""
 	@echo "For more information, see the README.md file."
@@ -69,6 +70,15 @@ audit-security:
 backup:
 	@chmod +x scripts/backup.sh
 	@./scripts/backup.sh
+
+restore:
+	@chmod +x scripts/restore.sh
+	@if [ -z "$(BACKUP_FILE)" ]; then \
+		echo "Usage: make restore BACKUP_FILE=<path_to_encrypted_backup>"; \
+		echo "Example: make restore BACKUP_FILE=~/backups/home-server/env_20241127_120000.tar.gz.enc"; \
+		exit 1; \
+	fi
+	@./scripts/restore.sh $(BACKUP_FILE)
 
 # Update Docker images
 update:
