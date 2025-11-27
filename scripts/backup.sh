@@ -20,7 +20,7 @@ mkdir -p "$BACKUP_DIR"
 # Backup .env file (encrypted)
 echo "Backing up .env file..."
 if [ -f ".env" ]; then
-    tar czf - .env | openssl enc -aes-256-cbc -salt -out "$BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc"
+    tar czf - .env | openssl enc -aes-256-cbc -salt -pbkdf2 -out "$BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc"
     echo -e "${GREEN}✓ .env backed up (encrypted)${NC}"
 else
     echo -e "${YELLOW}⚠ .env not found${NC}"
@@ -44,4 +44,4 @@ echo -e "${GREEN}Backup complete!${NC}"
 echo "Location: $BACKUP_DIR"
 echo ""
 echo "To restore .env:"
-echo "  openssl enc -aes-256-cbc -d -in $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc | tar xz"
+echo "  openssl enc -aes-256-cbc -d -pbkdf2 -in $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc | tar xz"
