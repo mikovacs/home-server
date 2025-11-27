@@ -55,6 +55,8 @@ All backups containing sensitive data **must** be encrypted:
 # Create encrypted backup
 make backup
 
+# Verify backup integrity
+openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc -out /dev/null
 # Restore from backup (includes integrity verification)
 ./scripts/restore.sh ~/backups/home-server/env_TIMESTAMP.tar.gz.enc
 
@@ -251,6 +253,8 @@ If you suspect a security breach:
    # 1. Generate new Cloudflare tunnel token
    # 2. Update .env with new token
    
+   # Restore from clean backup
+   openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
    # Restore from clean backup (verifies integrity and decrypts)
    ./scripts/restore.sh ~/backups/home-server/env_TIMESTAMP.tar.gz.enc
    

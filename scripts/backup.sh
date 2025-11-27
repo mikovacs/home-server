@@ -10,6 +10,9 @@ MOUNT_POINT="/mnt/external-hdd"
 BACKUP_DIR="${BACKUP_DIR:-$HOME/backups/home-server}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
+# Encryption parameters (AES-256-CBC with PBKDF2 for strong key derivation)
+ENC_CIPHER="aes-256-cbc"
+ENC_OPTS="-salt -pbkdf2 -iter 100000"
 # Source shared crypto utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./crypto-utils.sh
@@ -59,6 +62,11 @@ mkdir -p "$BACKUP_DIR"
 # Uses AES-256-CBC with HMAC-SHA256 for authenticated encryption (encrypt-then-MAC pattern)
 echo "Backing up .env file..."
 if [ -f ".env" ]; then
+    tar czf - .env | openssl enc -${ENC_CIPHER} ${ENC_OPTS} -out "$BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc"
+    if [ $? -eq 0 ] && [ -f "$BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc" ]; then
+        echo -e "${GREEN}✓ .env backed up (encrypted)${NC}"
+    else
+        echo -e "${RED}✗ Failed to backup .env${NC}"
     if ! backup_env_file; then
         exit 1
     fi
@@ -86,6 +94,8 @@ echo ""
 echo -e "${GREEN}Backup complete!${NC}"
 echo "Location: $BACKUP_DIR"
 echo ""
+echo "To restore .env:"
+echo "  openssl enc -${ENC_CIPHER} -d ${ENC_OPTS} -in $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc | tar xz"
 echo "To restore .env, use the restore script:"
 echo "  ./scripts/restore.sh $BACKUP_DIR/env_${TIMESTAMP}.tar.gz.enc"
 echo ""

@@ -108,7 +108,7 @@ BACKUP_DIR=/path/to/backups make backup
 1. **Restore .env file**:
 
    ```bash
-   openssl enc -aes-256-cbc -d -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
+   openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
    ```
 
 2. **Restore service configurations**:
