@@ -148,9 +148,13 @@ Review [`docker-compose.yml`](docker-compose.yml) for exposed ports:
 
    ```bash
    # Scan images for vulnerabilities
-   docker scan lscr.io/linuxserver/plex:latest
-   docker scan lscr.io/linuxserver/qbittorrent:latest
-   docker scan cloudflare/cloudflared:latest
+   docker scout cves lscr.io/linuxserver/plex:latest
+   docker scout cves lscr.io/linuxserver/qbittorrent:latest
+   docker scout cves cloudflare/cloudflared:latest
+   # Alternatively, use the following for a summary of vulnerabilities:
+   docker scout quickview lscr.io/linuxserver/plex:latest
+   docker scout quickview lscr.io/linuxserver/qbittorrent:latest
+   docker scout quickview cloudflare/cloudflared:latest
    ```
 
 ## Updates & Maintenance
