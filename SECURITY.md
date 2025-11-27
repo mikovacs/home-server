@@ -42,7 +42,7 @@ This project uses sensitive credentials that must be protected:
 
 All backups containing sensitive data **must** be encrypted:
 
-1. **`.env` backups**: Automatically encrypted with AES-256-CBC by backup script
+1. **`.env` backups**: Automatically encrypted with AES-256-CBC and protected with HMAC-SHA256 for integrity verification
 2. **Password protection**: You'll be prompted for encryption password
 3. **Secure storage**: Store encrypted backups in multiple locations:
    - Local encrypted drive
@@ -55,8 +55,8 @@ All backups containing sensitive data **must** be encrypted:
 # Create encrypted backup
 make backup
 
-# Verify backup integrity
-openssl enc -aes-256-cbc -d -pbkdf2 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc -out /dev/null
+# Verify backup integrity before restore (requires backup password)
+PASSWORD="your-backup-password" openssl dgst -sha256 -hmac "$PASSWORD" ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | awk '{print $2}' | diff - ~/backups/home-server/env_TIMESTAMP.tar.gz.enc.hmac
 
 # Store backup password securely in password manager
 ```
@@ -251,8 +251,11 @@ If you suspect a security breach:
    # 1. Generate new Cloudflare tunnel token
    # 2. Update .env with new token
    
-   # Restore from clean backup
-   openssl enc -aes-256-cbc -d -pbkdf2 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
+   # Verify backup integrity first (requires backup password)
+   PASSWORD="your-backup-password" openssl dgst -sha256 -hmac "$PASSWORD" ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | awk '{print $2}' | diff - ~/backups/home-server/env_TIMESTAMP.tar.gz.enc.hmac
+   
+   # Restore from clean backup (only if verification passes)
+   openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
    
    # Rebuild containers
    docker-compose down
