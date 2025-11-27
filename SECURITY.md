@@ -55,8 +55,8 @@ All backups containing sensitive data **must** be encrypted:
 # Create encrypted backup
 make backup
 
-# Verify backup integrity before restore (requires backup password)
-PASSWORD="your-backup-password" openssl dgst -sha256 -hmac "$PASSWORD" ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | awk '{print $2}' | diff - ~/backups/home-server/env_TIMESTAMP.tar.gz.enc.hmac
+# Restore from backup (includes integrity verification)
+./scripts/restore.sh ~/backups/home-server/env_TIMESTAMP.tar.gz.enc
 
 # Store backup password securely in password manager
 ```
@@ -65,8 +65,8 @@ PASSWORD="your-backup-password" openssl dgst -sha256 -hmac "$PASSWORD" ~/backups
 
 When restoring from backups:
 
-1. Verify backup source is trusted
-2. Scan restored files for tampering
+1. Use the restore script which verifies integrity before decryption
+2. Verify backup source is trusted
 3. Rotate all tokens after restore
 4. Audit security configuration: `make audit-security`
 
@@ -251,11 +251,8 @@ If you suspect a security breach:
    # 1. Generate new Cloudflare tunnel token
    # 2. Update .env with new token
    
-   # Verify backup integrity first (requires backup password)
-   PASSWORD="your-backup-password" openssl dgst -sha256 -hmac "$PASSWORD" ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | awk '{print $2}' | diff - ~/backups/home-server/env_TIMESTAMP.tar.gz.enc.hmac
-   
-   # Restore from clean backup (only if verification passes)
-   openssl enc -aes-256-cbc -d -pbkdf2 -iter 100000 -in ~/backups/home-server/env_TIMESTAMP.tar.gz.enc | tar xz
+   # Restore from clean backup (verifies integrity and decrypts)
+   ./scripts/restore.sh ~/backups/home-server/env_TIMESTAMP.tar.gz.enc
    
    # Rebuild containers
    docker-compose down
