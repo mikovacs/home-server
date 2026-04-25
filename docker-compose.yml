@@ -1,0 +1,193 @@
+name: home-server
+
+networks:
+  proxy:
+    name: home-server-proxy
+
+volumes:
+  portainer-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${APPDATA_PATH}/portainer
+
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "80:80"
+      - "8080:8080"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./config/traefik/dynamic:/etc/traefik/dynamic:ro
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_HOST}`)
+      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.middlewares=dashboard-auth,security-headers@file
+      - traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}
+      - traefik.http.routers.plex.rule=Host(`${PLEX_HOST}`)
+      - traefik.http.routers.plex.entrypoints=web
+      - traefik.http.routers.plex.middlewares=security-headers@file
+      - traefik.http.routers.plex.service=plex-host
+      - traefik.http.services.plex-host.loadbalancer.server.url=http://host.docker.internal:32400
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.2.1
+    container_name: cloudflared
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    command: tunnel --config /etc/cloudflared/config.yml --credentials-file /etc/cloudflared/credentials.json run ${CLOUDFLARE_TUNNEL_ID}
+    volumes:
+      - ./config/cloudflared:/etc/cloudflared:ro
+    networks:
+      - proxy
+
+  portainer:
+    image: portainer/portainer-ce:2.27.1
+    container_name: portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portainer.rule=Host(`${PORTAINER_HOST}`)
+      - traefik.http.routers.portainer.entrypoints=web
+      - traefik.http.routers.portainer.middlewares=security-headers@file
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+
+  filebrowser:
+    image: filebrowser/filebrowser:v2.32.0
+    container_name: filebrowser
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    command:
+      - --config
+      - /config/settings.json
+      - --database
+      - /database/filebrowser.db
+    volumes:
+      - /mnt:/srv
+      - ./config/filebrowser/settings.json:/config/settings.json:ro
+      - ${APPDATA_PATH}/filebrowser:/database
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.filebrowser.rule=Host(`${FILEBROWSER_HOST}`)
+      - traefik.http.routers.filebrowser.entrypoints=web
+      - traefik.http.routers.filebrowser.middlewares=security-headers@file
+      - traefik.http.services.filebrowser.loadbalancer.server.port=80
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:5.0.4
+    container_name: qbittorrent
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
+    volumes:
+      - ${APPDATA_PATH}/qbittorrent:/config
+      - ${DOWNLOADS_PATH}:/downloads
+    ports:
+      - "6881:6881"
+      - "6881:6881/udp"
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.qbittorrent.rule=Host(`${QBITTORRENT_HOST}`)
+      - traefik.http.routers.qbittorrent.entrypoints=web
+      - traefik.http.routers.qbittorrent.middlewares=security-headers@file
+      - traefik.http.services.qbittorrent.loadbalancer.server.port=8080
+
+  plex:
+    image: lscr.io/linuxserver/plex:1.41.5
+    container_name: plex
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM}
+    volumes:
+      - ${APPDATA_PATH}/plex:/config
+      - ${PLEX_MEDIA_PATH}/movies:/movies
+      - ${PLEX_MEDIA_PATH}/series:/tv
+    labels:
+      - traefik.enable=false
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:4.0.13
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_PATH}/sonarr:/config
+      - ${PLEX_MEDIA_PATH}/series:/tv
+      - ${DOWNLOADS_PATH}:/downloads
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sonarr.rule=Host(`${SONARR_HOST}`)
+      - traefik.http.routers.sonarr.entrypoints=web
+      - traefik.http.routers.sonarr.middlewares=security-headers@file
+      - traefik.http.services.sonarr.loadbalancer.server.port=8989
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:5.19.3
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_PATH}/radarr:/config
+      - ${PLEX_MEDIA_PATH}/movies:/movies
+      - ${DOWNLOADS_PATH}:/downloads
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.radarr.rule=Host(`${RADARR_HOST}`)
+      - traefik.http.routers.radarr.entrypoints=web
+      - traefik.http.routers.radarr.middlewares=security-headers@file
+      - traefik.http.services.radarr.loadbalancer.server.port=7878
+
+  whoami:
+    image: traefik/whoami:v1.10
+    container_name: whoami
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`${WHOAMI_HOST}`)
+      - traefik.http.routers.whoami.entrypoints=web
+      - traefik.http.routers.whoami.middlewares=security-headers@file
+      - traefik.http.services.whoami.loadbalancer.server.port=80

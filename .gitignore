@@ -1,0 +1,18 @@
+.env
+
+# Cloudflare tunnel credentials are secrets and must not be committed.
+config/cloudflared/*.json
+!config/cloudflared/credentials.example.json
+
+# Local runtime data and logs
+*.log
+*.pid
+.DS_Store
+
+# Editor and OS noise
+.idea/
+.vscode/
+Thumbs.db
+
+# Compose override files can contain local-only experiments.
+docker-compose.override.yml
