@@ -129,7 +129,6 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - VERSION=docker
-      - PLEX_CLAIM=${PLEX_CLAIM}
     volumes:
       - ${APPDATA_PATH}/plex:/config
       - ${PLEX_MEDIA_PATH}/movies:/movies

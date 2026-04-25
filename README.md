@@ -82,12 +82,11 @@ htpasswd -nbB admin 'change-this-password' | sed -e 's/\$/\$\$/g'
 
 Az eredményt tedd a `.env` fájl `TRAEFIK_DASHBOARD_AUTH` értékébe.
 
-Plex első claim:
+Plex első beállítás:
 
-1. Kérj claim tokent: <https://www.plex.tv/claim/>
-2. Tedd a `.env` fájl `PLEX_CLAIM` értékébe.
-3. Indítsd el a stacket.
-4. Sikeres claim után törölheted az értéket a `.env` fájlból.
+1. Indítsd el a stacket.
+2. Nyisd meg a Plex webes felületét a beállított `PLEX_HOST` címen, vagy helyi hálóról: `http://<server-ip>:32400/web`.
+3. Jelentkezz be a Plex fiókoddal, majd a webes varázslóban add hozzá a szervert.
 
 ## Hasznos dokumentáció
 

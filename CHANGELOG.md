@@ -10,3 +10,7 @@
 - Portainer, File Browser, qBittorrent, Plex, Sonarr, Radarr, and whoami services.
 - Bootstrap, start, stop, status, and Cloudflare helper scripts.
 - Ubuntu setup, Cloudflare Tunnel, and custom app hosting documentation.
+
+### Changed
+
+- Plex first setup now uses the Plex web UI instead of a `PLEX_CLAIM` environment variable.
